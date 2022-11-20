@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  scrapeit:
+    build: ./scrapeit
+    volumes:
+      - ./scrapeit:/app
+    ports:
+      - 5005:80
+    healthcheck:
+      test: bash -c "[ -f ./result.csv ]"
+      interval: "1s"
+      retries: 300
+
+
+  aptsdb13:
+    build: ./aptsdb13
+    volumes:
+      - ./aptsdb13:/app
+    # command: sh -c './wait-for.sh http://scrapeit -- echo "The api is up! Let's use it"'
+    depends_on:
+      scrapeit:
+        condition: service_healthy
+
+  apts:
+    build: ./apts
+    volumes:
+      - ./apts:/app
+    ports:
+      - 5001:80
+    depends_on:
+      - aptsdb13
+
+  site:
+    build: ./site
+    volumes:
+      - ./site:/src
+    ports:
+      - 5013:80
+    depends_on:
+      - apts
+
